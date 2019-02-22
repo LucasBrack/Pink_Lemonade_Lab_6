@@ -1,0 +1,140 @@
+
+```{r, echo = FALSE, results = 'hide', message = FALSE}
+library(tidyverse)
+COflights <- read_csv("https://files.osf.io/v1/resources/3z5as4pej8/providers/osfstorage/5a8ca28f57103100104584db")
+```
+
+
+```{r, echo = FALSE, results = 'hide', message = FALSE}
+justthecarrier <- COflights %>%
+  filter(DEST == "DEN") %>%
+   select(CARRIER) %>%
+  distinct()
+```
+
+
+
+
+**Probability each carrier is delayed given all of its flights to Denver**
+```{r, echo = FALSE, message = FALSE}
+probabilityplot <- COflights %>%
+  filter(ARR_DELAY >= 15, DEST == "DEN") %>%
+  group_by(CARRIER) %>%
+  summarize(count = n()) %>%
+  select(count)
+totalpercarrier <- COflights %>%
+  filter(DEST == "DEN") %>%
+  group_by(CARRIER) %>%
+  summarize(count = n()) %>%
+  select(count)
+ProbabilityOfDelay <- probabilityplot/totalpercarrier
+```
+
+**A plot showing which carrier has the highest probability of delay given the amount of flights they had into denver.**
+
+```{r, echo = FALSE, message = FALSE}
+tableplot <- cbind(justthecarrier, ProbabilityOfDelay) %>%
+  distinct()
+tableplot
+
+
+ggplot(data = tableplot) +
+  geom_col(mapping = aes(x = CARRIER, y = count, fill = CARRIER)) +
+  ylab('Probability of delay')
+```
+
+
+
+
+
+**Calculating the joint probability of plane arriving late(to denver) and that plane being 1,000 miles or greater a distance**
+
+```{r, echo = FALSE, message = FALSE}
+jointprobability <- COflights %>%
+  filter(ARR_DELAY >= 15, DISTANCE >= 1000, DEST == "DEN") %>%
+  summarise(count = n())
+
+TotalJoinProbability <- COflights %>%
+  filter(ARR_DELAY >= 15 | DEST == "DEN") %>%
+  summarise(count = n())
+
+FinalProbability <- jointprobability/TotalJoinProbability
+FinalProbability
+
+```
+
+
+
+**probability a flight is late**
+```{r, echo = FALSE, message = FALSE}
+Lateflight <- COflights %>%
+  filter(ARR_DELAY >= 15) %>%
+  summarize(count = n())
+
+Allflights <- COflights %>%
+  count(CANCELLED != 1) 
+y <- 473153
+
+probabilityitslate <- Lateflight/473153
+probabilityitslate
+
+
+```
+
+
+
+
+
+
+
+**Vague Question and a table to answer**
+```{r, echo = FALSE, message = FALSE}
+Weatherdelays <- COflights %>%
+  filter(DEST == "DEN") %>%
+  select(WEATHER_DELAY) %>%
+  distinct() %>%
+  filter(WEATHER_DELAY >= 15, WEATHER_DELAY != 'NA') %>%
+  summarise(count = n())
+NASdelays <- COflights %>%
+  filter(DEST == "DEN") %>%
+  select(NAS_DELAY) %>%
+  distinct() %>%
+  filter(NAS_DELAY >= 15,NAS_DELAY != 'NA') %>%
+  summarise(count = n())
+LateAirDelay <- COflights %>%
+  filter(DEST == "DEN") %>%
+  select(LATE_AIRCRAFT_DELAY) %>%
+  distinct() %>%
+  filter(LATE_AIRCRAFT_DELAY >= 15, LATE_AIRCRAFT_DELAY != 'NA') %>%
+  summarise(count = n())
+SecurityDelay <- COflights %>%
+  filter(DEST == "DEN") %>%
+  select(SECURITY_DELAY) %>%
+  distinct() %>%
+  filter(SECURITY_DELAY >= 15, SECURITY_DELAY != 'NA') %>%
+  summarise(count = n())
+CarrierDelay <- COflights %>%
+  filter(DEST == "DEN") %>%
+  select(CARRIER_DELAY) %>%
+  distinct() %>%
+  filter(CARRIER_DELAY >= 15, CARRIER_DELAY != 'NA') %>%
+  summarise(count = n())
+
+
+Delayplot <- rbind(Weatherdelays,CarrierDelay,SecurityDelay,LateAirDelay,NASdelays)
+m <- matrix(1:1, nrow = 5)
+rownames(m) <- c('Weather','Carrier','Security','Lateaircraft','NAS')
+finaltable <- cbind(m,Delayplot)
+finaltable[1] <- NULL
+finaltable
+```
+
+
+
+**Answer to my individual**
+Two factors I discovered that affect the arrival in denver are the carrier, which can increase the delay probability, or the distance which can also increase the probability of a delay, although it is not a large increase.
+
+**Answer to Vague Question**
+From the table I created above, we can clearly see that Carrier delays have the greatest affect on late flights, while security bare almost no effect.
+**What I Did**
+For this lab, I completed the full individual portion.  Furthermore, I created a table that calculated the total number for each type of delay, when it resulted in a flight being late to denver. I then created a 1:5 Matrix with the delay name types, and binded this column to the table of data.  Using this, I was  able to answer the vague question about what causes the most late flights.  I did alot of data manipulation in order to create my plot as well.
