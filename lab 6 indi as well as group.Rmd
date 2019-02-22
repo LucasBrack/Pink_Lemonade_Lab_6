@@ -1,0 +1,122 @@
+```{r}
+library(tidyverse)
+COflights <- read_csv("https://files.osf.io/v1/resources/3z5as4pej8/providers/osfstorage/5a8ca28f57103100104584db")
+COflights
+```
+
+Probability of AA that were cancelled
+
+```{r}
+indiarr <- COflights%>%
+  filter(!is.na(ARR_TIME))
+  filter(ORIGIN=="DEN"|DEST=="DEN")
+indiarr
+```
+
+
+```{r}
+filter(indiarr, CARRIER=="AA")%>%
+  summarise(indiarr = n())
+filter(indiarr, CARRIER=="AA"&CANCELLED ==1)%>%
+  summarise(indiarr = n())
+filter(indiarr, CARRIER=="AA"&CANCELLED ==1)%>%
+  summarise(indiarr = n())/filter(indiarr, CARRIER=="AA")%>%
+  summarise(indiarr = n())
+```
+What is the probability of flight on 2017/8 and origined at denver?
+
+```{r}
+filter(indiarr, YEAR==2017&MONTH ==8)%>%
+  summarise(indiarr = n())
+filter(indiarr,YEAR==2017&MONTH ==8&ORIGIN=="DEN" )%>%
+  summarise(indiarr = n())
+filter(indiarr,YEAR==2017&MONTH ==8&ORIGIN=="DEN" )%>%
+  summarise(indiarr = n())/filter(indiarr, YEAR==2017&MONTH ==8)%>%
+  summarise(indiarr = n())
+
+```
+
+What is the probability that the flight is delaid given that the carrier is DL?
+
+```{r}
+filter(indiarr, DEP_DELAY>=0)%>%
+  summarise(indiarr = n())/nrow(indiarr)
+filter(indiarr, CARRIER == "DL")%>%
+  summarise(indiarr = n())/nrow(indiarr)
+filter(indiarr, DEP_DELAY>=0)%>%
+  summarise(indiarr = n())/nrow(indiarr)*filter(indiarr, CARRIER == "DL")%>%
+  summarise(indiarr = n())/nrow(indiarr)
+
+```
+
+
+Chart that shows the probability of delaid flight over the year.
+
+
+```{r}
+chartfile <-filter(indiarr, DEP_DELAY>=0)%>%
+  group_by(MONTH)%>%
+  summarise( n())/
+group_by(indiarr, MONTH)%>%
+  summarise(n())
+```
+
+Visualization for my finding:
+
+
+```{r}
+monthdelay <- indiarr %>%
+  filter(DEP_DELAY >= 0) %>%
+  group_by(MONTH) %>%
+  summarise(delay = n())
+
+totaldelay <- indiarr %>%
+  group_by(MONTH) %>%
+  summarise(totaldelay = n()) 
+
+monthdelay$delaycount <- totaldelay$totaldelay
+
+delayprob <- monthdelay %>%
+  mutate(prob = delay/delaycount)
+
+```
+
+
+```{r}
+ggplot(data = delayprob, aes(x = MONTH, y = prob))+
+  geom_point()+
+  geom_smooth()
+```
+
+
+
+
+Findings:1, The carrier "AA" never got canceled in the dataset.
+2, flights on 2017/8 were mostly originated from Denver(47%)
+3, Carrier "DL" had a low chances to be deliad, should be rewarded!!!!.
+4. January's flights had the highest percentage being delaid. While November had lowest percentage being delaid.
+
+
+What I have done: Helped my team to figure out the way to calculate the probability, did my individual part, created a visualization for my team, generated a research question, found the answer for that question.
+
+
+
+Team part:
+
+Which Carrier delaid the most often ?
+
+```{r}
+Team <-filter(indiarr, DEP_DELAY>=0)%>%
+  group_by(MONTH, CARRIER)%>%
+  summarise(total = n())
+
+```
+
+```{r}
+ggplot(data = Team) + 
+  geom_point(mapping = aes(x = MONTH, y = total)) + 
+  facet_wrap(~ CARRIER, nrow =5)
+```
+ Finding: Obviously, WN has the highest rate to be delaid comparing to other airlines, and AS, B6, and EV were very unlikely to be late over the time.
+ 
+ Why knowing this is important? Because the airline should know how good or terrible their services are, and knowing this may help them earn their customers back. 
