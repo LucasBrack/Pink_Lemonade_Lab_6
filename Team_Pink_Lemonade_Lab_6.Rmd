@@ -1,0 +1,572 @@
+---
+title: "Pink_Lemoande_Lab_6"
+author: "Team Pink Lemonade- Lucas Brack , Jon Guay, Max Ward, Harold Chang"
+date: "February 22, 2019"
+output: html_document
+---
+#What Factors Lead to On-time Arrivals?
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+COflights <- read_csv("https://files.osf.io/v1/resources/3z5as4pej8/providers/osfstorage/5a8ca28f57103100104584db")
+```
+
+```{r,echo=FALSE, message = FALSE}
+
+Weatherdelays <- COflights %>%
+
+  filter(DEST == "DEN") %>%
+
+  select(WEATHER_DELAY) %>%
+
+  distinct() %>%
+
+  filter(WEATHER_DELAY >= 15, WEATHER_DELAY != 'NA') %>%
+
+  summarise(count = n())
+
+NASdelays <- COflights %>%
+
+  filter(DEST == "DEN") %>%
+
+  select(NAS_DELAY) %>%
+
+  distinct() %>%
+
+  filter(NAS_DELAY >= 15,NAS_DELAY != 'NA') %>%
+
+  summarise(count = n())
+
+LateAirDelay <- COflights %>%
+
+  filter(DEST == "DEN") %>%
+
+  select(LATE_AIRCRAFT_DELAY) %>%
+
+  distinct() %>%
+
+  filter(LATE_AIRCRAFT_DELAY >= 15, LATE_AIRCRAFT_DELAY != 'NA') %>%
+
+  summarise(count = n())
+
+SecurityDelay <- COflights %>%
+
+  filter(DEST == "DEN") %>%
+
+  select(SECURITY_DELAY) %>%
+
+  distinct() %>%
+
+  filter(SECURITY_DELAY >= 15, SECURITY_DELAY != 'NA') %>%
+
+  summarise(count = n())
+
+CarrierDelay <- COflights %>%
+
+  filter(DEST == "DEN") %>%
+
+  select(CARRIER_DELAY) %>%
+
+  distinct() %>%
+
+  filter(CARRIER_DELAY >= 15, CARRIER_DELAY != 'NA') %>%
+
+  summarise(count = n())
+
+
+
+
+
+Delayplot <- rbind(Weatherdelays,CarrierDelay,SecurityDelay,LateAirDelay,NASdelays)
+
+m <- matrix(1:1, nrow = 5)
+
+rownames(m) <- c('Weather','Carrier','Security','Lateaircraft','NAS')
+
+finaltable <- cbind(m,Delayplot)
+
+finaltable[1] <- NULL
+
+finaltable
+
+```
+
+From the table I created above, we can clearly see that Carrier delays have the greatest affect on late flights, while security bare almost no effect.
+
+
+#Which Carrier delayed the most often ?
+``` {r,echo=FALSE,message = FALSE}
+
+indiarr <- COflights %>%
+  filter(!is.na(ARR_TIME))%>%
+  filter(ORIGIN=='DEN' | DEST=='DEN' )
+indiarr
+
+```
+
+``` {r,echo=FALSE,message = FALSE}
+
+Team <-filter(indiarr, DEP_DELAY>=0)%>%
+
+  group_by(MONTH, CARRIER)%>%
+
+  summarise(total = n())
+
+
+
+```
+
+``` {r,echo=FALSE,message = FALSE}
+
+ggplot(data = Team) + 
+
+  geom_point(mapping = aes(x = MONTH, y = total)) + 
+
+  facet_wrap(~ CARRIER, nrow =5)
+
+```
+
+ Finding: Obviously, WN has the highest rate to be delayed comparing to other airlines, and AS, B6, and EV were very unlikely to be late over the time.
+
+
+ Why knowing this is important? Because the airline should know how good or terrible their services are, and knowing this may help them earn their customers back. 
+#Individual Portion
+
+##Jon Guay
+
+```{r,echo=FALSE, results = 'hide', message = FALSE}
+
+justthecarrier <- COflights %>%
+
+  filter(DEST == "DEN") %>%
+
+   select(CARRIER) %>%
+
+  distinct()
+
+```
+
+**Probability each carrier is delayed given all of its flights to Denver**
+
+```{r,echo=FALSE, message = FALSE}
+
+probabilityplot <- COflights %>%
+
+  filter(ARR_DELAY >= 15, DEST == "DEN") %>%
+
+  group_by(CARRIER) %>%
+
+  summarize(count = n()) %>%
+
+  select(count)
+
+totalpercarrier <- COflights %>%
+
+  filter(DEST == "DEN") %>%
+
+  group_by(CARRIER) %>%
+
+  summarize(count = n()) %>%
+
+  select(count)
+
+ProbabilityOfDelay <- probabilityplot/totalpercarrier
+
+```
+
+**A plot showing which carrier has the highest probability of delay given the amount of flights they had into denver.**
+
+```{r,echo=FALSE, message = FALSE}
+
+tableplot <- cbind(justthecarrier, ProbabilityOfDelay) %>%
+
+  distinct()
+
+tableplot
+
+
+
+
+
+ggplot(data = tableplot) +
+
+  geom_col(mapping = aes(x = CARRIER, y = count, fill = CARRIER)) +
+
+  ylab('Probability of delay')
+
+```
+
+**Calculating the joint probability of plane arriving late(to denver) and that plane being 1,000 miles or greater a distance**
+
+```{r,echo=FALSE, message = FALSE}
+
+jointprobability <- COflights %>%
+
+  filter(ARR_DELAY >= 15, DISTANCE >= 1000, DEST == "DEN") %>%
+
+  summarise(count = n())
+
+
+
+TotalJoinProbability <- COflights %>%
+
+  filter(ARR_DELAY >= 15 | DEST == "DEN") %>%
+
+  summarise(count = n())
+
+
+
+FinalProbability <- jointprobability/TotalJoinProbability
+
+FinalProbability
+
+
+
+```
+
+**probability a flight is late**
+
+```{r,echo=FALSE, message = FALSE}
+
+Lateflight <- COflights %>%
+
+  filter(ARR_DELAY >= 15) %>%
+
+  summarize(count = n())
+
+
+
+Allflights <- COflights %>%
+
+  count(CANCELLED != 1) 
+
+y <- 473153
+
+
+
+probabilityitslate <- Lateflight/473153
+
+probabilityitslate
+
+
+
+
+
+```
+**Answer to my individual**
+
+Two factors I discovered that affect the arrival in denver are the carrier, which can increase the delay probability, or the distance which can also increase the probability of a delay, although it is not a large increase.
+
+For this lab, I completed the full individual portion.  Furthermore, I created a table that calculated the total number for each type of delay, when it resulted in a flight being late to denver. I then created a 1:5 Matrix with the delay name types, and binded this column to the table of data.  Using this, I was  able to answer the vague question about what causes the most late flights.  I did alot of data manipulation in order to create my plot as well.
+
+##Harold Chang
+
+
+
+Probability of AA that were cancelled
+
+
+
+``` {r,echo=FALSE,message = FALSE}
+
+indiarr <-COflights %>%
+  filter(!is.na(ARR_TIME))%>%
+  filter(ORIGIN=='DEN' | DEST=='DEN' )
+
+indiarr
+
+```
+
+``` {r,echo=FALSE,message = FALSE}
+
+filter(indiarr, CARRIER=="AA")%>%
+
+  summarise(indiarr = n())
+
+filter(indiarr, CARRIER=="AA"&CANCELLED ==1)%>%
+
+  summarise(indiarr = n())
+
+filter(indiarr, CARRIER=="AA"&CANCELLED ==1)%>%
+
+  summarise(indiarr = n())/filter(indiarr, CARRIER=="AA")%>%
+
+  summarise(indiarr = n())
+
+```
+
+What is the probability of flight on 2017/8 and origined at denver?
+
+``` {r,echo=FALSE,message = FALSE}
+
+filter(indiarr, YEAR==2017&MONTH ==8)%>%
+
+  summarise(indiarr = n())
+
+filter(indiarr,YEAR==2017&MONTH ==8&ORIGIN=="DEN" )%>%
+
+  summarise(indiarr = n())
+
+filter(indiarr,YEAR==2017&MONTH ==8&ORIGIN=="DEN" )%>%
+
+  summarise(indiarr = n())/filter(indiarr, YEAR==2017&MONTH ==8)%>%
+
+  summarise(indiarr = n())
+
+
+
+```
+
+What is the probability that the flight is delayed given that the carrier is DL?
+
+``` {r,echo=FALSE,message = FALSE}
+
+filter(indiarr, DEP_DELAY>=0)%>%
+
+  summarise(indiarr = n())/nrow(indiarr)
+
+filter(indiarr, CARRIER == "DL")%>%
+
+  summarise(indiarr = n())/nrow(indiarr)
+
+filter(indiarr, DEP_DELAY>=0)%>%
+
+  summarise(indiarr = n())/nrow(indiarr)*filter(indiarr, CARRIER == "DL")%>%
+
+  summarise(indiarr = n())/nrow(indiarr)
+
+
+
+```
+
+Chart that shows the probability of delayed flight over the year.
+
+``` {r,echo=FALSE,message = FALSE}
+
+chartfile <-filter(indiarr, DEP_DELAY>=0)%>%
+
+  group_by(MONTH)%>%
+
+  summarise( n())/
+
+group_by(indiarr, MONTH)%>%
+
+  summarise(n())
+
+```
+
+Visualization for my finding:
+
+``` {r,echo=FALSE,message = FALSE}
+
+monthdelay <- indiarr %>%
+
+  filter(DEP_DELAY >= 0) %>%
+
+  group_by(MONTH) %>%
+
+  summarise(delay = n())
+
+
+
+totaldelay <- indiarr %>%
+
+  group_by(MONTH) %>%
+
+  summarise(totaldelay = n()) 
+
+
+
+monthdelay$delaycount <- totaldelay$totaldelay
+
+
+
+delayprob <- monthdelay %>%
+
+  mutate(prob = delay/delaycount)
+
+
+
+```
+
+``` {r,echo=FALSE,message = FALSE}
+
+ggplot(data = delayprob, aes(x = MONTH, y = prob))+
+
+  geom_point()+
+
+  geom_smooth()
+
+```
+
+Findings:
+1, The carrier "AA" never got canceled in the dataset.
+
+2, flights on 2017/8 were mostly originated from Denver(47%)
+
+3, Carrier "DL" had a low chances to be deliad, should be rewarded!!!!.
+
+4. January's flights had the highest percentage being delayed. While November had lowest percentage being delayed.
+
+What I have done: Helped my team to figure out the way to calculate the probability, did my individual part, created a visualization for my team, generated a research question, found the answer for that question.
+
+
+##Max Ward
+``` {r,echo=FALSE,message = FALSE}
+
+landed <- COflights %>%
+  filter(!is.na(ARR_TIME))%>%
+  filter(ORIGIN=='DEN' | DEST=='DEN' )%>%
+
+  select(-(CANCELLED: DIVERTED))
+
+view(landed)
+
+```
+
+*Probability of flight being delayed leaving Denver based on the month of the year
+
+``` {r,echo=FALSE,message = FALSE}
+
+prob <- landed %>%
+
+  filter(ARR_DELAY >= 15, ORIGIN == "DEN") %>%
+
+  group_by(MONTH) %>%
+
+  summarize(count = n()) %>% select(count)
+
+MonthTotal <- landed %>%
+
+  filter(ORIGIN == "DEN") %>%
+
+  group_by(MONTH) %>%
+
+  summarize(count = n()) %>% select(count)
+
+DelayProb <- prob/MonthTotal
+
+DelayProb
+
+```
+
+
+
+*Graph of the delay by Month
+
+``` {r,echo=FALSE,message = FALSE}
+
+ggplot(data = landed) +
+
+  geom_col(mapping = aes(x = MONTH, y = ARR_DELAY, fill = MONTH )) +
+
+  ylab('Total Delaty Time')
+
+```
+
+*Probability of a delay when the Destination is DEN
+
+``` {r,echo=FALSE,message = FALSE}
+
+prob2.0 <- landed %>%
+
+  filter(ARR_DELAY >= 15, DEST == "DEN") %>%
+
+  group_by(ORIGIN) %>%
+
+  summarize(count = n()) %>% select(count)
+
+DESTTotal <- landed %>%
+
+  filter(DEST == "DEN") %>%
+
+  group_by(ORIGIN) %>%
+
+  summarize(count = n()) %>% select(count)
+
+DelayProb2.0 <- prob2.0/DESTTotal
+
+DelayProb2.0
+
+```
+
+*I found the probability of delayed flights between the two variables of the month of the year and where the plane is traviling from to Denver. 
+
+##Lucas Brack
+
+```{r,echo=FALSE,results='hide'}
+landed <- COflights %>%
+  filter(!is.na(ARR_TIME))%>%
+  filter(ORIGIN=='DEN' | DEST=='DEN' )%>%
+  select(-(CANCELLED:DIVERTED)) %>%
+  select(-(YEAR)) %>%
+  select(-(TAIL_NUM))
+view(landed)
+```
+
+```{r,echo=FALSE,results='hide'}
+total <-landed %>%
+  summarize(number=n())
+total
+```
+
+```{r,echo=FALSE ,results='hide'}
+late<- landed %>%
+  filter(ARR_DELAY>=15)%>%
+  summarise(number=n())/total
+late
+```
+
+** Joint probability the aircraft departs early and arrives late
+``` {r,echo=FALSE,message = FALSE}
+departed_early <- landed %>%
+  filter(DEP_DELAY<=-5 & ARR_DELAY>=15)%>%
+  summarise(number=n())/total
+departed_early
+```
+This tells me that that depart early you most likely will arrive on time, so the arrival delay appear to mostly be caused by things that happen before take off, not in the air.
+
+**Probability the aircraft taxis out for over 20 minutes.
+```{r,echo=FALSE,message=FALSE}
+long_taxi <- landed %>%
+  filter(TAXI_OUT>=20) %>%
+  summarise(number=n())/total
+long_taxi
+```
+This tells that less than a quarter of flights taxi for 20 minutes, so it is a reasonable time to consider a long taxi.
+
+
+**Probability the plane arrives late given taxied out for more then 20 minutes.
+```{r,echo=FALSE ,results='hide',message=FALSE}
+late_and_taxi<- landed %>%
+  filter(ARR_DELAY>=15 & TAXI_OUT>=20)%>%
+  summarise(number=n())/total
+late_and_taxi
+```
+
+``` {r,echo=FALSE,message = FALSE}
+late_given_taxi=late_and_taxi/long_taxi
+late_given_taxi
+```
+This tells me that taxi time isn't as strong of an indicator of late arrival as some of the other things factors because the plane can spend awhile on the runway and stil arrive on time.
+
+**Plot of showing probability of arriving late given the taxi was over 15 minutes.
+```{r,echo=FALSE ,results='hide',message=FALSE}
+taxi <- landed%>%
+  filter(TAXI_OUT>=20)
+taxi
+```
+
+``` {r,echo=FALSE,message = FALSE}
+ggplot(data=taxi)+
+  geom_density(mapping =aes(x=ARR_DELAY))+
+  xlim(-80,200)+
+  labs(title = "Percentage of Arrival Times for Flights with a Taxi time over 15 minutes", x="Time Delayed for Arrival in Minutes")
+  
+  
+```
+
+This graph shows that the if a plane taxis for 20 or more minutes there is no strong indication if it will arrive late or not. The graph appears to have about even amounts on both sides, so taxi time isn't a good indicator unless you increase significantly.
+
+
+For this lab I did my individual part, and put together the team code. For my individual part, I choose to use a density plot because it would best show the percentages of planes that arrived during that time. For my joint probability I choose a small early arrival so there would stil be a reasonable chance for the plane to be delayed on landing.
