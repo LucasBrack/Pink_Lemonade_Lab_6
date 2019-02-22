@@ -1,0 +1,58 @@
+---
+title: "Lab 6"
+author: "Max Ward"
+date: "2/20/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+COflights <- read_csv("https://files.osf.io/v1/resources/3z5as4pej8/providers/osfstorage/5a8ca28f57103100104584db")
+```
+
+```{r}
+landed <- COflights %>%
+  filter(!is.na(ARR_TIME))%>%
+  filter(ORIGIN == 'DEN' | DEST == 'DEN')%>%
+  select(-(CANCELLED: DIVERTED))
+view(landed)
+```
+*Probability of flight being delayed leaving Denver based on the month of the year
+```{r}
+prob <- landed %>%
+  filter(ARR_DELAY >= 15, ORIGIN == "DEN") %>%
+  group_by(MONTH) %>%
+  summarize(count = n()) %>% select(count)
+MonthTotal <- landed %>%
+  filter(ORIGIN == "DEN") %>%
+  group_by(MONTH) %>%
+  summarize(count = n()) %>% select(count)
+DelayProb <- prob/MonthTotal
+DelayProb
+```
+
+*Graph of the delay by Month
+```{r}
+ggplot(data = landed) +
+  geom_col(mapping = aes(x = MONTH, y = ARR_DELAY, fill = MONTH )) +
+  ylab('Total Delaty Time')
+```
+
+
+*Probability of a delay when the Destination is DEN
+```{r}
+prob2.0 <- landed %>%
+  filter(ARR_DELAY >= 15, DEST == "DEN") %>%
+  group_by(ORIGIN) %>%
+  summarize(count = n()) %>% select(count)
+DESTTotal <- landed %>%
+  filter(DEST == "DEN") %>%
+  group_by(ORIGIN) %>%
+  summarize(count = n()) %>% select(count)
+DelayProb2.0 <- prob2.0/DESTTotal
+DelayProb2.0
+```
+
+*I found the probability of delayed flights between the two variables of the month of the year and where the plane is traviling from to Denver. 
+
